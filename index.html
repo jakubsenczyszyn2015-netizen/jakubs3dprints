@@ -284,7 +284,12 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://nqnqlajbuzttkeasycvl.supabase.co";
+const SUPABASE_KEY = "sb_publishable_g0S6fkUvYb1GbSVBaDR6ZA_AasYCZUg";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const ADMIN_CODE = "jakub3d";
 let prints = [];
 let orders = [];
@@ -314,38 +319,116 @@ const DEFAULT_PRINTS = [
 
 async function loadPrints(){
   try{
-    const res = await window.storage.get('prints', true);
-    prints = res ? JSON.parse(res.value) : DEFAULT_PRINTS;
+    const { data, error } = await sb.from('prints').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    if(data && data.length){
+      prints = data.map(row => ({
+        id: row.id,
+        name: row.name,
+        desc: row.description || '',
+        price: Number(row.price),
+        img: row.img || '',
+        colors: row.colors || [],
+        assemblyFee: Number(row.assembly_fee || 0)
+      }));
+    }else{
+      prints = DEFAULT_PRINTS;
+      // seed defaults into Supabase
+      for(const p of DEFAULT_PRINTS){
+        await sb.from('prints').insert({
+          id: p.id, name: p.name, description: p.desc, price: p.price,
+          img: p.img, colors: p.colors, assembly_fee: p.assemblyFee
+        });
+      }
+    }
   }catch(e){
+    console.error(e);
     prints = DEFAULT_PRINTS;
+    showToast('Could not load prints from database');
   }
   renderCatalog();
   renderAdminPrintList();
 }
 
-async function savePrints(){
+async function addPrintToDb(p){
   try{
-    await window.storage.set('prints', JSON.stringify(prints), true);
+    const { error } = await sb.from('prints').insert({
+      id: p.id, name: p.name, description: p.desc, price: p.price,
+      img: p.img, colors: p.colors, assembly_fee: p.assemblyFee
+    });
+    if(error) throw error;
   }catch(e){
-    showToast('Could not save prints');
+    console.error(e);
+    showToast('Could not save print');
+  }
+}
+
+async function deletePrintFromDb(id){
+  try{
+    const { error } = await sb.from('prints').delete().eq('id', id);
+    if(error) throw error;
+  }catch(e){
+    console.error(e);
+    showToast('Could not delete print');
   }
 }
 
 async function loadOrders(){
   try{
-    const res = await window.storage.get('orders', true);
-    orders = res ? JSON.parse(res.value) : [];
+    const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    orders = (data || []).map(row => ({
+      id: row.id,
+      printName: row.print_name,
+      price: Number(row.price),
+      name: row.customer_name,
+      address: row.address,
+      contact: row.contact,
+      color: row.color || '',
+      assembly: row.assembly || '',
+      notes: row.notes || '',
+      status: row.status || 'pending',
+      created: row.created_at
+    }));
   }catch(e){
+    console.error(e);
     orders = [];
+    showToast('Could not load orders from database');
   }
   renderOrders();
 }
 
-async function saveOrders(){
+async function addOrderToDb(o){
   try{
-    await window.storage.set('orders', JSON.stringify(orders), true);
+    const { error } = await sb.from('orders').insert({
+      id: o.id, print_name: o.printName, price: o.price,
+      customer_name: o.name, address: o.address, contact: o.contact,
+      color: o.color, assembly: o.assembly, notes: o.notes, status: o.status
+    });
+    if(error) throw error;
   }catch(e){
+    console.error(e);
     showToast('Could not save order');
+  }
+}
+
+async function updateOrderStatusInDb(id, status){
+  try{
+    const { error } = await sb.from('orders').update({ status }).eq('id', id);
+    if(error) throw error;
+  }catch(e){
+    console.error(e);
+    showToast('Could not update order');
+  }
+}
+
+async function deleteOrderFromDb(id){
+  try{
+    const { error } = await sb.from('orders').delete().eq('id', id);
+    if(error) throw error;
+  }catch(e){
+    console.error(e);
+    showToast('Could not delete order');
   }
 }
 
@@ -453,7 +536,7 @@ document.getElementById('submitOrder').addEventListener('click', async ()=>{
   };
 
   orders.unshift(order);
-  await saveOrders();
+  await addOrderToDb(order);
   renderOrders();
   showToast('Order sent! Jakub will be in touch.');
 
@@ -497,7 +580,7 @@ document.getElementById('addPrintBtn').addEventListener('click', async ()=>{
   if(!name || isNaN(price)){ showToast('Add a name and price'); return; }
 
   prints.unshift({id:'p'+Date.now(), name, desc, price, img, colors, assemblyFee});
-  await savePrints();
+  await addPrintToDb(prints[0]);
   renderCatalog();
   renderAdminPrintList();
   showToast('Print added');
@@ -522,7 +605,7 @@ function renderAdminPrintList(){
   el.querySelectorAll('.del').forEach(d=>{
     d.addEventListener('click', async ()=>{
       prints = prints.filter(p=>p.id!==d.dataset.id);
-      await savePrints();
+      await deletePrintFromDb(d.dataset.id);
       renderCatalog();
       renderAdminPrintList();
     });
@@ -555,15 +638,15 @@ function renderOrders(){
 
   el.querySelectorAll('.markdone').forEach(b=>b.addEventListener('click', async ()=>{
     const o = orders.find(x=>x.id===b.dataset.id); o.status='done';
-    await saveOrders(); renderOrders();
+    await updateOrderStatusInDb(o.id, 'done'); renderOrders();
   }));
   el.querySelectorAll('.markpending').forEach(b=>b.addEventListener('click', async ()=>{
     const o = orders.find(x=>x.id===b.dataset.id); o.status='pending';
-    await saveOrders(); renderOrders();
+    await updateOrderStatusInDb(o.id, 'pending'); renderOrders();
   }));
   el.querySelectorAll('.delorder').forEach(b=>b.addEventListener('click', async ()=>{
     orders = orders.filter(x=>x.id!==b.dataset.id);
-    await saveOrders(); renderOrders();
+    await deleteOrderFromDb(b.dataset.id); renderOrders();
   }));
 }
 
