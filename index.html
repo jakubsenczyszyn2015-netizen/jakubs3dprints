@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jakub's 3D Prints</title>
+<style>
+  :root{
+    --bg:#0c0e12;
+    --bg-soft:#15181e;
+    --card:#1b1f27;
+    --line:#2a2f3a;
+    --text:#eef1f5;
+    --muted:#8e96a4;
+    --accent:#ff6a3d;
+    --accent-dim:#3a2a22;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk',-apple-system,Segoe UI,Roboto,sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  @font-face{
+    font-family:'Space Grotesk';
+    src:local('Space Grotesk');
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px 80px;}
+
+  header{
+    padding:60px 24px 40px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(ellipse at top, rgba(255,106,61,0.08), transparent 60%);
+  }
+  header h1{
+    font-size:clamp(32px,6vw,56px);
+    font-weight:700;
+    letter-spacing:-0.02em;
+  }
+  header h1 span{color:var(--accent);}
+  header p{color:var(--muted);margin-top:10px;font-size:15px;}
+
+  nav{
+    display:flex;justify-content:center;gap:10px;margin-top:24px;flex-wrap:wrap;
+  }
+  nav button{
+    background:var(--card);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:14px;
+    cursor:pointer;
+    transition:.15s;
+    font-family:inherit;
+  }
+  nav button.active{background:var(--accent);border-color:var(--accent);color:#1a0a04;font-weight:600;}
+  nav button:hover{border-color:var(--accent);}
+
+  section{display:none;padding-top:40px;}
+  section.active{display:block;animation:fade .3s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  h2{font-size:22px;font-weight:600;margin-bottom:6px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:18px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    transition:.2s;
+  }
+  .card:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .card .img{
+    width:100%;aspect-ratio:1;background:var(--bg-soft);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .card .img img{width:100%;height:100%;object-fit:cover;}
+  .card .img .ph{color:var(--muted);font-size:13px;}
+  .card .body{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .card .name{font-weight:600;font-size:15px;}
+  .card .desc{color:var(--muted);font-size:13px;flex:1;}
+  .card .price{color:var(--accent);font-weight:700;font-size:16px;}
+  .card button.order-btn{
+    margin-top:8px;
+    background:var(--accent);
+    color:#1a0a04;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .card button.order-btn:hover{opacity:.9;}
+
+  .empty{
+    text-align:center;color:var(--muted);padding:60px 20px;
+    border:1px dashed var(--line);border-radius:var(--radius);
+  }
+
+  /* Order form */
+  .form-card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;max-width:480px;margin:0 auto;
+  }
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;}
+  input,textarea,select{
+    width:100%;padding:10px 12px;background:var(--bg-soft);
+    border:1px solid var(--line);border-radius:8px;color:var(--text);
+    font-family:inherit;font-size:14px;
+  }
+  input:focus,textarea:focus,select:focus{outline:1px solid var(--accent);border-color:var(--accent);}
+  .form-card .selected{
+    background:var(--bg-soft);border-radius:8px;padding:12px;margin-top:14px;
+    font-size:14px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .submit-btn{
+    margin-top:20px;width:100%;background:var(--accent);color:#1a0a04;
+    border:none;padding:12px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;
+  }
+  .address-note{
+    background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;
+    padding:10px 14px;font-size:13px;color:#ffb091;margin-bottom:18px;
+  }
+
+  /* Admin */
+  .admin-gate{max-width:340px;margin:0 auto;text-align:center;}
+  .admin-gate input{margin-top:12px;}
+  .admin-gate button{margin-top:14px;width:100%;}
+  .admin-gate button{background:var(--accent);color:#1a0a04;border:none;padding:10px;border-radius:8px;font-weight:600;cursor:pointer;}
+
+  .order-item{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:12px;
+  }
+  .order-item .top{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:8px;}
+  .order-item .status{
+    padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;
+  }
+  .status.pending{background:#3a2a22;color:#ff9a6a;}
+  .status.done{background:#1f3a2a;color:#6affa0;}
+  .order-item .row{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin:2px 0;}
+  .order-item .row .l{color:var(--muted);}
+  .order-item .actions{margin-top:10px;display:flex;gap:8px;}
+  .order-item .actions button{
+    background:var(--bg-soft);border:1px solid var(--line);color:var(--text);
+    padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;
+  }
+  .order-item .actions button:hover{border-color:var(--accent);}
+
+  /* admin add print form */
+  .admin-section{max-width:480px;margin:0 auto 40px;}
+  .admin-section h3{font-size:16px;margin-bottom:12px;}
+  .admin-list .a-item{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;margin-bottom:8px;font-size:14px;
+  }
+  .admin-list .a-item .del{color:#ff6a6a;cursor:pointer;font-size:13px;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#1a0a04;padding:12px 22px;border-radius:999px;
+    font-weight:600;font-size:14px;opacity:0;transition:.3s;pointer-events:none;
+    z-index:50;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,-8px);}
+
+  .loading{text-align:center;color:var(--muted);padding:40px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Jakub<span>'s</span> 3D Prints</h1>
+  <p>Custom 3D prints, made to order and delivered to your door.</p>
+  <nav>
+    <button class="active" data-view="catalog">Catalog</button>
+    <button data-view="admin">Admin</button>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <section id="catalog" class="active">
+    <h2>Available prints</h2>
+    <p class="sub">Pick a print and place your order — Jakub will deliver it locally.</p>
+    <div id="catalogGrid" class="grid">
+      <div class="loading">Loading prints...</div>
+    </div>
+  </section>
+
+  <section id="order">
+    <h2>Place your order</h2>
+    <p class="sub">Fill in your details and Jakub will sort delivery.</p>
+    <div class="form-card">
+      <div class="selected" id="selectedPrintBox">
+        <span id="selectedPrintName">No print selected</span>
+        <span id="selectedPrintPrice"></span>
+      </div>
+      <label for="custName">Your name</label>
+      <input type="text" id="custName" placeholder="e.g. Tom Smith">
+
+      <label for="custAddress">Delivery address</label>
+      <textarea id="custAddress" rows="2" placeholder="Where should Jakub deliver this?"></textarea>
+
+      <label for="custContact">Contact (phone or Instagram)</label>
+      <input type="text" id="custContact" placeholder="e.g. 07123 456789 or @username">
+
+      <label for="custColor" id="colorLabel">Colour</label>
+      <select id="custColor">
+        <option value="">Select a colour</option>
+      </select>
+
+      <label for="custAssembly" id="assemblyLabel">Assembly</label>
+      <select id="custAssembly">
+        <option value="Assembled">Assembled</option>
+        <option value="Unassembled">Unassembled</option>
+      </select>
+
+      <label for="custNotes">Notes (optional)</label>
+      <textarea id="custNotes" rows="2" placeholder="Anything else Jakub should know"></textarea>
+
+      <button class="submit-btn" id="submitOrder">Send order</button>
+    </div>
+  </section>
+
+  <section id="admin">
+    <div class="admin-gate" id="adminGate">
+      <h2>Admin login</h2>
+      <p class="sub">Jakub only — enter the admin code to manage prints &amp; orders.</p>
+      <input type="password" id="adminCode" placeholder="Admin code">
+      <button id="adminLoginBtn">Enter</button>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      <h2>Admin panel</h2>
+      <p class="sub">Manage your catalog and view incoming orders.</p>
+
+      <div class="admin-section">
+        <h3>Add a new print</h3>
+        <label for="newName">Name</label>
+        <input type="text" id="newName" placeholder="e.g. Articulated dragon">
+        <label for="newDesc">Description</label>
+        <textarea id="newDesc" rows="2" placeholder="Short description"></textarea>
+        <label for="newPrice">Price (£)</label>
+        <input type="number" id="newPrice" placeholder="e.g. 15" min="0" step="0.5">
+        <label for="newImg">Image URL (optional)</label>
+        <input type="text" id="newImg" placeholder="https://...">
+        <label for="newColors">Available colours (comma separated)</label>
+        <input type="text" id="newColors" placeholder="e.g. Red, Black, White, Blue">
+        <label for="newAssemblyFee">Assembly extra cost (£, leave 0 if no option to assemble)</label>
+        <input type="number" id="newAssemblyFee" placeholder="e.g. 3" min="0" step="0.5">
+        <button class="submit-btn" id="addPrintBtn">Add print</button>
+      </div>
+
+      <div class="admin-section">
+        <h3>Current prints</h3>
+        <div id="adminPrintList" class="admin-list"></div>
+      </div>
+
+      <div class="admin-section">
+        <h3>Orders</h3>
+        <div id="ordersList"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_CODE = "jakub3d";
+let prints = [];
+let orders = [];
+let selectedPrint = null;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function switchView(view){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.getElementById(view).classList.add('active');
+}
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click', ()=>switchView(b.dataset.view));
+});
+
+const DEFAULT_PRINTS = [
+  {id:'p1', name:'Articulated dragon', desc:'Fully posable 3D printed dragon, great desk toy.', price:18, img:'', colors:['Red','Black','White','Gold'], assemblyFee:3},
+  {id:'p2', name:'Phone stand', desc:'Adjustable angle phone/tablet stand.', price:6, img:'', colors:['Black','White','Blue'], assemblyFee:0},
+  {id:'p3', name:'Custom nameplate', desc:'Personalised name in your choice of colour.', price:8, img:'', colors:['Black','White','Red','Blue','Green'], assemblyFee:0}
+];
+
+async function loadPrints(){
+  try{
+    const res = await window.storage.get('prints', true);
+    prints = res ? JSON.parse(res.value) : DEFAULT_PRINTS;
+  }catch(e){
+    prints = DEFAULT_PRINTS;
+  }
+  renderCatalog();
+  renderAdminPrintList();
+}
+
+async function savePrints(){
+  try{
+    await window.storage.set('prints', JSON.stringify(prints), true);
+  }catch(e){
+    showToast('Could not save prints');
+  }
+}
+
+async function loadOrders(){
+  try{
+    const res = await window.storage.get('orders', true);
+    orders = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    orders = [];
+  }
+  renderOrders();
+}
+
+async function saveOrders(){
+  try{
+    await window.storage.set('orders', JSON.stringify(orders), true);
+  }catch(e){
+    showToast('Could not save order');
+  }
+}
+
+function renderCatalog(){
+  const grid = document.getElementById('catalogGrid');
+  if(!prints.length){
+    grid.innerHTML = '<div class="empty">No prints listed yet. Check back soon!</div>';
+    return;
+  }
+  grid.innerHTML = prints.map(p=>`
+    <div class="card">
+      <div class="img">
+        ${p.img ? `<img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}">` : `<span class="ph"><i class="ti ti-cube"></i> No image</span>`}
+      </div>
+      <div class="body">
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="desc">${escapeHtml(p.desc||'')}</div>
+        <div class="price">£${Number(p.price).toFixed(2)}</div>
+        ${p.colors && p.colors.length ? `<div class="desc">Colours: ${p.colors.map(escapeHtml).join(', ')}</div>` : ''}
+        ${p.assemblyFee ? `<div class="desc">Assembled: +£${Number(p.assemblyFee).toFixed(2)}</div>` : ''}
+        <button class="order-btn" data-id="${p.id}">Order this</button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.order-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const print = prints.find(p=>p.id===btn.dataset.id);
+      selectedPrint = print;
+      document.getElementById('selectedPrintName').textContent = print.name;
+      document.getElementById('selectedPrintPrice').textContent = '£'+Number(print.price).toFixed(2);
+
+      const colorSelect = document.getElementById('custColor');
+      const colors = print.colors || [];
+      if(colors.length){
+        colorSelect.innerHTML = '<option value="">Select a colour</option>' +
+          colors.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        colorSelect.style.display = '';
+        colorSelect.required = true;
+        colorSelect.previousElementSibling.style.display = '';
+      }else{
+        colorSelect.innerHTML = '<option value="">No colour options for this print</option>';
+        colorSelect.style.display = 'none';
+        colorSelect.required = false;
+        colorSelect.previousElementSibling.style.display = 'none';
+      }
+
+      const assemblySelect = document.getElementById('custAssembly');
+      const fee = Number(print.assemblyFee || 0);
+      const basePrice = Number(print.price);
+      if(fee > 0){
+        assemblySelect.innerHTML = `
+          <option value="Unassembled" data-price="${basePrice}">Unassembled — £${basePrice.toFixed(2)}</option>
+          <option value="Assembled" data-price="${(basePrice+fee).toFixed(2)}">Assembled — £${(basePrice+fee).toFixed(2)} (+£${fee.toFixed(2)})</option>
+        `;
+        assemblySelect.style.display = '';
+        assemblySelect.previousElementSibling.style.display = '';
+      }else{
+        assemblySelect.innerHTML = `<option value="Assembled" data-price="${basePrice}">Assembled — £${basePrice.toFixed(2)}</option>`;
+        assemblySelect.style.display = 'none';
+        assemblySelect.previousElementSibling.style.display = 'none';
+      }
+      assemblySelect.dispatchEvent(new Event('change'));
+
+      switchView('order');
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('custAssembly').addEventListener('change', ()=>{
+  const sel = document.getElementById('custAssembly');
+  const opt = sel.options[sel.selectedIndex];
+  if(opt && opt.dataset.price){
+    document.getElementById('selectedPrintPrice').textContent = '£'+Number(opt.dataset.price).toFixed(2);
+  }
+});
+
+document.getElementById('submitOrder').addEventListener('click', async ()=>{
+  const name = document.getElementById('custName').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const contact = document.getElementById('custContact').value.trim();
+  const colorSelect = document.getElementById('custColor');
+  const color = colorSelect.style.display === 'none' ? '' : colorSelect.value;
+  const assemblySelectEl = document.getElementById('custAssembly');
+  const assemblyOpt = assemblySelectEl.options[assemblySelectEl.selectedIndex];
+  const assembly = assemblySelectEl.value;
+  const finalPrice = assemblyOpt && assemblyOpt.dataset.price ? Number(assemblyOpt.dataset.price) : selectedPrint.price;
+  const notes = document.getElementById('custNotes').value.trim();
+
+  if(!selectedPrint){ showToast('Pick a print from the catalog first'); switchView('catalog'); return; }
+  if(!name || !address || !contact){ showToast('Please fill in name, address and contact'); return; }
+  if(colorSelect.style.display !== 'none' && !color){ showToast('Please select a colour'); return; }
+
+  const order = {
+    id: 'o'+Date.now(),
+    printName: selectedPrint.name,
+    price: finalPrice,
+    name, address, contact, color, assembly, notes,
+    status: 'pending',
+    created: new Date().toISOString()
+  };
+
+  orders.unshift(order);
+  await saveOrders();
+  renderOrders();
+  showToast('Order sent! Jakub will be in touch.');
+
+  document.getElementById('custName').value='';
+  document.getElementById('custAddress').value='';
+  document.getElementById('custContact').value='';
+  document.getElementById('custColor').innerHTML = '<option value="">Select a colour</option>';
+  document.getElementById('custColor').style.display='';
+  document.getElementById('colorLabel').style.display='';
+  document.getElementById('custAssembly').value='Assembled';
+  document.getElementById('custNotes').value='';
+  selectedPrint = null;
+  document.getElementById('selectedPrintName').textContent = 'No print selected';
+  document.getElementById('selectedPrintPrice').textContent = '';
+  switchView('catalog');
+});
+
+// Admin
+document.getElementById('adminLoginBtn').addEventListener('click', ()=>{
+  const code = document.getElementById('adminCode').value;
+  if(code === ADMIN_CODE){
+    document.getElementById('adminGate').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
+    renderAdminPrintList();
+    renderOrders();
+  }else{
+    showToast('Wrong code');
+  }
+});
+
+document.getElementById('addPrintBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newName').value.trim();
+  const desc = document.getElementById('newDesc').value.trim();
+  const price = parseFloat(document.getElementById('newPrice').value);
+  const img = document.getElementById('newImg').value.trim();
+  const colorsRaw = document.getElementById('newColors').value.trim();
+  const colors = colorsRaw ? colorsRaw.split(',').map(c=>c.trim()).filter(Boolean) : [];
+  const assemblyFeeRaw = document.getElementById('newAssemblyFee').value;
+  const assemblyFee = assemblyFeeRaw ? parseFloat(assemblyFeeRaw) : 0;
+
+  if(!name || isNaN(price)){ showToast('Add a name and price'); return; }
+
+  prints.unshift({id:'p'+Date.now(), name, desc, price, img, colors, assemblyFee});
+  await savePrints();
+  renderCatalog();
+  renderAdminPrintList();
+  showToast('Print added');
+
+  document.getElementById('newName').value='';
+  document.getElementById('newDesc').value='';
+  document.getElementById('newPrice').value='';
+  document.getElementById('newImg').value='';
+  document.getElementById('newColors').value='';
+  document.getElementById('newAssemblyFee').value='';
+});
+
+function renderAdminPrintList(){
+  const el = document.getElementById('adminPrintList');
+  if(!prints.length){ el.innerHTML = '<div class="empty">No prints yet.</div>'; return; }
+  el.innerHTML = prints.map(p=>`
+    <div class="a-item">
+      <span>${escapeHtml(p.name)} — £${Number(p.price).toFixed(2)}${p.assemblyFee ? ` (+£${Number(p.assemblyFee).toFixed(2)} assembled)` : ''}</span>
+      <span class="del" data-id="${p.id}">Remove</span>
+    </div>
+  `).join('');
+  el.querySelectorAll('.del').forEach(d=>{
+    d.addEventListener('click', async ()=>{
+      prints = prints.filter(p=>p.id!==d.dataset.id);
+      await savePrints();
+      renderCatalog();
+      renderAdminPrintList();
+    });
+  });
+}
+
+function renderOrders(){
+  const el = document.getElementById('ordersList');
+  if(!orders.length){ el.innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+  el.innerHTML = orders.map(o=>`
+    <div class="order-item">
+      <div class="top">
+        <span>${new Date(o.created).toLocaleString()}</span>
+        <span class="status ${o.status}">${o.status}</span>
+      </div>
+      <div class="row"><span class="l">Print</span><span>${escapeHtml(o.printName)}</span></div>
+      <div class="row"><span class="l">Total price</span><span>£${Number(o.price).toFixed(2)}</span></div>
+      <div class="row"><span class="l">Customer</span><span>${escapeHtml(o.name)}</span></div>
+      <div class="row"><span class="l">Address</span><span>${escapeHtml(o.address)}</span></div>
+      <div class="row"><span class="l">Contact</span><span>${escapeHtml(o.contact)}</span></div>
+      ${o.color ? `<div class="row"><span class="l">Colour</span><span>${escapeHtml(o.color)}</span></div>` : ''}
+      <div class="row"><span class="l">Assembly</span><span>${escapeHtml(o.assembly||'Assembled')}</span></div>
+      ${o.notes ? `<div class="row"><span class="l">Notes</span><span>${escapeHtml(o.notes)}</span></div>` : ''}
+      <div class="actions">
+        ${o.status==='pending' ? `<button class="markdone" data-id="${o.id}">Mark delivered</button>` : `<button class="markpending" data-id="${o.id}">Mark pending</button>`}
+        <button class="delorder" data-id="${o.id}">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.markdone').forEach(b=>b.addEventListener('click', async ()=>{
+    const o = orders.find(x=>x.id===b.dataset.id); o.status='done';
+    await saveOrders(); renderOrders();
+  }));
+  el.querySelectorAll('.markpending').forEach(b=>b.addEventListener('click', async ()=>{
+    const o = orders.find(x=>x.id===b.dataset.id); o.status='pending';
+    await saveOrders(); renderOrders();
+  }));
+  el.querySelectorAll('.delorder').forEach(b=>b.addEventListener('click', async ()=>{
+    orders = orders.filter(x=>x.id!==b.dataset.id);
+    await saveOrders(); renderOrders();
+  }));
+}
+
+loadPrints();
+loadOrders();
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+</body>
+</html>
