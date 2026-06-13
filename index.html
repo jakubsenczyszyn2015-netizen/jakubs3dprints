@@ -365,8 +365,14 @@ async function addPrintToDb(p){
 
 async function deletePrintFromDb(id){
   try{
-    const { error } = await sb.from('prints').delete().eq('id', id);
-    if(error) throw error;
+    const { error, data, status } = await sb.from('prints').delete().eq('id', id).select();
+    if(error){
+      alert('Delete failed: ' + error.message + ' (code: ' + error.code + ')');
+      throw error;
+    }
+    if(!data || data.length === 0){
+      alert('Delete request succeeded but no row was deleted. ID sent: ' + id);
+    }
   }catch(e){
     console.error(e);
     showToast('Could not delete print');
